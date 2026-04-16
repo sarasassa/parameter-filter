@@ -7,7 +7,8 @@ const extensionFolder = `third-party/${extensionName}`;
 // Настройки по умолчанию
 const defaultSettings = {
   filterTopP: false,
-  filterTemperature: false
+  filterTemperature: false,
+  filterTopK: false // Добавлена настройка для Top K
 };
 
 let settings = { ...defaultSettings };
@@ -18,7 +19,8 @@ function loadSettings() {
     extension_settings[extensionName] = { ...defaultSettings };
   }
   
-  settings = extension_settings[extensionName];
+  // Обеспечиваем наличие новых настроек, если загружается старый конфиг
+  settings = { ...defaultSettings, ...extension_settings[extensionName] };
   updateUI();
 }
 
@@ -32,6 +34,7 @@ function saveSettings() {
 function updateUI() {
   $('#param-filter-top-p').prop('checked', settings.filterTopP);
   $('#param-filter-temperature').prop('checked', settings.filterTemperature);
+  $('#param-filter-top-k').prop('checked', settings.filterTopK); // Обновление UI для Top K
 }
 
 // Настройка обработчиков событий
@@ -46,6 +49,13 @@ function setupEventHandlers() {
     settings.filterTemperature = $(this).prop('checked');
     saveSettings();
     console.log('Parameter Filter: Temperature filter', settings.filterTemperature ? 'enabled' : 'disabled');
+  });
+
+  // Обработчик для Top K
+  $('#param-filter-top-k').off('change').on('change', function() {
+    settings.filterTopK = $(this).prop('checked');
+    saveSettings();
+    console.log('Parameter Filter: Top K filter', settings.filterTopK ? 'enabled' : 'disabled');
   });
 }
 
@@ -67,6 +77,12 @@ function interceptAPIRequests() {
         if (settings.filterTemperature && body.temperature !== undefined) {
           delete body.temperature;
           console.log('Parameter Filter: Removed temperature from request');
+        }
+
+        // Удаление top_k
+        if (settings.filterTopK && body.top_k !== undefined) {
+          delete body.top_k;
+          console.log('Parameter Filter: Removed top_k from request');
         }
         
         options.body = JSON.stringify(body);
